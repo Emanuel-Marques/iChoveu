@@ -110,12 +110,31 @@ export function createCityElement(cityInfo) {
 /**
  * Lida com o evento de submit do formulário de busca
  */
-export function handleSearch(event) {
+
+const showData = (data) => {
+  const ul = document.querySelector('#cities');
+  data.forEach((element) => {
+    const li = document.createElement('li');
+    li.innerHTML = `Id: ${element.id}
+    Name: ${element.name}
+    Region: ${element.region} 
+    Country: ${element.country}
+    Lat: ${element.lat}
+    Lon: ${element.lon}
+    Url: ${element.url}`;
+    ul.appendChild(li);
+  });
+};
+export async function handleSearch(event) {
   event.preventDefault();
   clearChildrenById('cities');
 
   const searchInput = document.getElementById('search-input');
   const searchValue = searchInput.value;
-  searchCities(searchValue);
-  // seu código aqui
+  const data = await searchCities(searchValue);
+  if (data.length === 0) {
+    alert('Nenhuma cidade encontrada');
+  } else {
+    showData(data);
+  }
 }
