@@ -1,4 +1,4 @@
-import { searchCities } from './weatherAPI';
+import { searchCities, getWeatherByCity } from './weatherAPI';
 
 /**
  * Cria um elemento HTML com as informações passadas
@@ -111,20 +111,51 @@ export function createCityElement(cityInfo) {
  * Lida com o evento de submit do formulário de busca
  */
 
-const showData = (data) => {
+function showData(data) {
   const ul = document.querySelector('#cities');
   data.forEach((element) => {
-    const li = document.createElement('li');
-    li.innerHTML = `Id: ${element.id}
-    Name: ${element.name}
-    Region: ${element.region} 
-    Country: ${element.country}
-    Lat: ${element.lat}
-    Lon: ${element.lon}
-    Url: ${element.url}`;
-    ul.appendChild(li);
+    const div = document.createElement('div');
+    div.className = 'city';
+    const divHeader = document.createElement('div');
+    divHeader.className = 'city-heading';
+    const title = document.createElement('p');
+    title.className = 'city-name';
+    title.innerHTML = element.name;
+    divHeader.appendChild(title);
+    const country = document.createElement('p');
+    country.innerHTML = element.country;
+    divHeader.appendChild(country);
+    div.appendChild(divHeader);
+    const btnForecast = document.createElement('button');
+    btnForecast.className = 'city-forecast-button';
+    btnForecast.innerHTML = 'Show Forecast';
+    div.appendChild(btnForecast);
+    ul.appendChild(div);
   });
-};
+}
+
+function showForest(data) {
+  data.forEach(async (element, index) => {
+    const dataForest = await getWeatherByCity(element.url);
+    const cityHeading = document.querySelectorAll('.city-heading');
+    const cityInfoContainer = document.createElement('div');
+    cityInfoContainer.classList = 'city-info-container';
+    const cityTempContainer = document.createElement('div');
+    cityTempContainer.classList = 'city-temp-container';
+    const condition = document.createElement('p');
+    condition.innerHTML = dataForest.condition;
+    cityTempContainer.appendChild(condition);
+    const temp = document.createElement('p');
+    temp.innerHTML = `${dataForest.temp}°C`;
+    temp.classList = 'city-temp';
+    cityTempContainer.appendChild(temp);
+    cityInfoContainer.appendChild(cityTempContainer);
+    const img = document.createElement('img');
+    img.src = dataForest.icon;
+    cityInfoContainer.appendChild(img);
+    cityHeading[index].insertAdjacentElement('afterend', cityInfoContainer);
+  });
+}
 export async function handleSearch(event) {
   event.preventDefault();
   clearChildrenById('cities');
@@ -136,5 +167,6 @@ export async function handleSearch(event) {
     alert('Nenhuma cidade encontrada');
   } else {
     showData(data);
+    showForest(data);
   }
 }
