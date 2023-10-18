@@ -1,5 +1,6 @@
 import { searchCities, getWeatherByCity } from './weatherAPI';
 
+const TOKEN = import.meta.env.VITE_TOKEN;
 /**
  * Cria um elemento HTML com as informações passadas
  */
@@ -14,7 +15,10 @@ function createElement(tagName, className, textContent = '') {
  * Recebe as informações de uma previsão e retorna um elemento HTML
  */
 function createForecast(forecast) {
-  const { date, maxTemp, minTemp, condition, icon } = forecast;
+  const { date, day: { condition: { text, icon } } } = forecast;
+  const condition = text;
+  const maxTemp = forecast.day.maxtemp_c;
+  const minTemp = forecast.day.mintemp_c;
 
   const weekday = new Date(date);
   weekday.setDate(weekday.getDate() + 1);
@@ -111,6 +115,14 @@ export function createCityElement(cityInfo) {
  * Lida com o evento de submit do formulário de busca
  */
 
+async function setForecast(cityUrl, days) {
+  const response = await fetch(`http://api.weatherapi.com/v1/forecast.json?lang=pt&key=${TOKEN}&q=${cityUrl}&days=${days}`);
+  const data = await response.json();
+  const { forecast: { forecastday } } = data;
+  console.log(forecastday);
+  showForecast(forecastday);
+}
+
 function showData(data) {
   const ul = document.querySelector('#cities');
   data.forEach((element) => {
@@ -128,9 +140,15 @@ function showData(data) {
     div.appendChild(divHeader);
     const btnForecast = document.createElement('button');
     btnForecast.className = 'city-forecast-button';
-    btnForecast.innerHTML = 'Show Forecast';
+    btnForecast.innerHTML = 'Ver Previsão';
     div.appendChild(btnForecast);
     ul.appendChild(div);
+  });
+  const btn = document.querySelectorAll('.city-forecast-button');
+  data.forEach((element, index) => {
+    btn[index].addEventListener('click', () => {
+      setForecast(element.url, '7');
+    });
   });
 }
 
@@ -156,6 +174,7 @@ function showForest(data) {
     cityHeading[index].insertAdjacentElement('afterend', cityInfoContainer);
   });
 }
+
 export async function handleSearch(event) {
   event.preventDefault();
   clearChildrenById('cities');
