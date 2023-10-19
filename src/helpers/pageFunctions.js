@@ -80,8 +80,16 @@ export function showForecast(forecastList) {
 /**
  * Recebe um objeto com as informações de uma cidade e retorna um elemento HTML
  */
+
+async function setForecast(cityUrl, days) {
+  const response = await fetch(`http://api.weatherapi.com/v1/forecast.json?lang=pt&key=${TOKEN}&q=${cityUrl}&days=${days}`);
+  const data = await response.json();
+  const { forecast: { forecastday } } = data;
+  showForecast(forecastday);
+}
+
 export function createCityElement(cityInfo) {
-  const { name, country, temp, condition, icon /* , url */ } = cityInfo;
+  const { name, country, temp, condition, icon, url } = cityInfo;
 
   const cityElement = createElement('li', 'city');
 
@@ -105,8 +113,14 @@ export function createCityElement(cityInfo) {
   infoContainer.appendChild(tempContainer);
   infoContainer.appendChild(iconElement);
 
+  const btnForecast = createElement('button', 'city-forecast-button', 'Ver previsão');
+  btnForecast.addEventListener('click', () => {
+    setForecast(url, '7');
+  });
+
   cityElement.appendChild(headingElement);
   cityElement.appendChild(infoContainer);
+  cityElement.appendChild(btnForecast);
 
   return cityElement;
 }
@@ -115,66 +129,6 @@ export function createCityElement(cityInfo) {
  * Lida com o evento de submit do formulário de busca
  */
 
-async function setForecast(cityUrl, days) {
-  const response = await fetch(`http://api.weatherapi.com/v1/forecast.json?lang=pt&key=${TOKEN}&q=${cityUrl}&days=${days}`);
-  const data = await response.json();
-  const { forecast: { forecastday } } = data;
-  console.log(forecastday);
-  showForecast(forecastday);
-}
-
-function showData(data) {
-  const ul = document.querySelector('#cities');
-  data.forEach((element) => {
-    const div = document.createElement('div');
-    div.className = 'city';
-    const divHeader = document.createElement('div');
-    divHeader.className = 'city-heading';
-    const title = document.createElement('p');
-    title.className = 'city-name';
-    title.innerHTML = element.name;
-    divHeader.appendChild(title);
-    const country = document.createElement('p');
-    country.innerHTML = element.country;
-    divHeader.appendChild(country);
-    div.appendChild(divHeader);
-    const btnForecast = document.createElement('button');
-    btnForecast.className = 'city-forecast-button';
-    btnForecast.innerHTML = 'Ver Previsão';
-    div.appendChild(btnForecast);
-    ul.appendChild(div);
-  });
-  const btn = document.querySelectorAll('.city-forecast-button');
-  data.forEach((element, index) => {
-    btn[index].addEventListener('click', () => {
-      setForecast(element.url, '7');
-    });
-  });
-}
-
-function showForest(data) {
-  data.forEach(async (element, index) => {
-    const dataForest = await getWeatherByCity(element.url);
-    const cityHeading = document.querySelectorAll('.city-heading');
-    const cityInfoContainer = document.createElement('div');
-    cityInfoContainer.classList = 'city-info-container';
-    const cityTempContainer = document.createElement('div');
-    cityTempContainer.classList = 'city-temp-container';
-    const condition = document.createElement('p');
-    condition.innerHTML = dataForest.condition;
-    cityTempContainer.appendChild(condition);
-    const temp = document.createElement('p');
-    temp.innerHTML = `${dataForest.temp}°C`;
-    temp.classList = 'city-temp';
-    cityTempContainer.appendChild(temp);
-    cityInfoContainer.appendChild(cityTempContainer);
-    const img = document.createElement('img');
-    img.src = dataForest.icon;
-    cityInfoContainer.appendChild(img);
-    cityHeading[index].insertAdjacentElement('afterend', cityInfoContainer);
-  });
-}
-
 export async function handleSearch(event) {
   event.preventDefault();
   clearChildrenById('cities');
@@ -182,10 +136,14 @@ export async function handleSearch(event) {
   const searchInput = document.getElementById('search-input');
   const searchValue = searchInput.value;
   const data = await searchCities(searchValue);
+  const ul = document.querySelector('#cities');
   if (data.length === 0) {
     alert('Nenhuma cidade encontrada');
   } else {
-    showData(data);
-    showForest(data);
+    data.forEach(async (element) => {
+      const dataForest = await getWeatherByCity(element.url);
+      const objectoMesclado = { ...element, ...dataForest };
+      ul.appendChild(createCityElement(objectoMesclado));
+    });
   }
 }
